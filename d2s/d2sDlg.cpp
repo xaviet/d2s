@@ -18,22 +18,95 @@
 
 Cd2sDlg::Cd2sDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(IDD_D2S_DIALOG, pParent)
+  , m_path(_T(""))
+  , mp_d2sData(NULL)
+  , m_d2sDataSize(0)
+  , m_flag(_T(""))
+  , m_ver(_T(""))
+  , m_size(_T(""))
+  , m_checkSum(_T(""))
+  , m_activeW(_T(""))
+  , m_name(_T(""))
+  , m_status(_T(""))
+  , m_progression(_T(""))
+  , m_class(_T(""))
+  , m_level(_T(""))
+  , m_difficulty(_T(""))
+  , m_wayPoint(_T(""))
+  , m_stat(_T(""))
+  , m_wpEnable(FALSE)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
 
 void Cd2sDlg::DoDataExchange(CDataExchange* pDX)
 {
-	CDialogEx::DoDataExchange(pDX);
+  CDialogEx::DoDataExchange(pDX);
+  DDX_Text(pDX, IDC_EDIT1, m_path);
+  DDV_MaxChars(pDX, m_path, 255);
+  DDX_Text(pDX, IDC_EDIT2, m_flag);
+  DDX_Text(pDX, IDC_EDIT3, m_ver);
+  DDX_Text(pDX, IDC_EDIT4, m_size);
+  DDX_Text(pDX, IDC_EDIT5, m_checkSum);
+  DDX_Text(pDX, IDC_EDIT6, m_activeW);
+  DDX_Text(pDX, IDC_EDIT7, m_name);
+  DDV_MaxChars(pDX, m_name, 16);
+  DDX_Text(pDX, IDC_EDIT8, m_status);
+  DDV_MaxChars(pDX, m_status, 2);
+  DDX_Text(pDX, IDC_EDIT9, m_progression);
+  DDX_Text(pDX, IDC_EDIT10, m_class);
+  DDV_MaxChars(pDX, m_class, 2);
+  DDX_Text(pDX, IDC_EDIT11, m_level);
+  DDV_MaxChars(pDX, m_level, 2);
+  DDX_Text(pDX, IDC_EDIT12, m_difficulty);
+  DDX_Text(pDX, IDC_EDIT13, m_wayPoint);
+  DDX_Text(pDX, IDC_EDIT14, m_stat);
+  DDX_Check(pDX, IDC_CHECK1, m_wpEnable);
 }
 
 BEGIN_MESSAGE_MAP(Cd2sDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
+  ON_BN_CLICKED(IDC_BUTTON2, &Cd2sDlg::OnBnClickedButton2)
+  ON_BN_CLICKED(IDOK, &Cd2sDlg::OnBnClickedOk)
+  ON_EN_CHANGE(IDC_EDIT7, &Cd2sDlg::OnEnChangeEdit7)
+  ON_EN_CHANGE(IDC_EDIT8, &Cd2sDlg::OnEnChangeEdit8)
+  ON_EN_CHANGE(IDC_EDIT10, &Cd2sDlg::OnEnChangeEdit10)
+  ON_EN_CHANGE(IDC_EDIT11, &Cd2sDlg::OnEnChangeEdit11)
+  ON_BN_CLICKED(IDC_CHECK1, &Cd2sDlg::OnBnClickedCheck1)
 END_MESSAGE_MAP()
 
 
 // Cd2sDlg 消息处理程序
+
+CString Cd2sDlg::hexDisp(unsigned char* vp_buffer, int v_length)
+{
+  CString t_cs=_T("");
+  for (int t_i = 0; t_i < v_length; t_i++)
+  {
+    t_cs.Format(_T("%s %02X"), t_cs, *vp_buffer++);
+  }
+  t_cs.Trim();
+  return t_cs;
+}
+
+CString  Cd2sDlg::stringDisp(unsigned char* vp_buffer, int v_length)
+{
+  CString t_cs = CString((char*)vp_buffer);
+  return t_cs;
+}
+
+CString Cd2sDlg::checkSum(struct s_d2sFormat* vp_buffer, int v_length)
+{
+  int t_sum = 0;
+  unsigned char* t_ch = (unsigned char*)vp_buffer;
+  for (int t_i = 0; t_i < v_length; t_i++)
+  {
+    t_sum = (t_sum << 1) + (t_sum < 0) + *t_ch++;
+  }
+  vp_buffer->m_checkSum = t_sum;
+  return hexDisp((unsigned char*)&t_sum, 4);
+}
 
 BOOL Cd2sDlg::OnInitDialog()
 {
@@ -45,6 +118,10 @@ BOOL Cd2sDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO: 在此添加额外的初始化代码
+
+  m_path = _T("C:\\code\\Visual C++ 项目\\d2s\\d2s\\test.d2s");
+  UpdateData(FALSE);
+  d2sParser(m_path);
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -85,3 +162,139 @@ HCURSOR Cd2sDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
+void Cd2sDlg::OnBnClickedButton2()
+{
+  // TODO: 在此添加控件通知处理程序代码
+  CString t_defaultDir = _T("../");   //默认打开的文件路径  
+  CString t_filter = _T("文件 (*.d2s)|*.d2s||");   //文件过虑的类型  
+  CFileDialog openFileDlg(TRUE, t_defaultDir, m_path, OFN_HIDEREADONLY | OFN_READONLY, t_filter, NULL);
+  INT_PTR result = openFileDlg.DoModal();
+  if (result == IDOK)
+  {
+    m_path = openFileDlg.GetPathName();
+    UpdateData(FALSE);
+    d2sParser(m_path);
+  }
+}
+
+int Cd2sDlg::d2sParser(CString v_path)
+{
+  CStdioFile t_csf;
+  t_csf.Open(v_path, CFile::modeRead | CFile::typeBinary);
+  mp_d2sData = (struct s_d2sFormat*)malloc(DEF_bufferLength);
+  memset(mp_d2sData, 0, DEF_bufferLength);
+  m_d2sDataSize = t_csf.Read(mp_d2sData, DEF_bufferLength);
+  t_csf.Close();
+  m_flag = hexDisp((unsigned char*)&mp_d2sData->m_flag, 4);
+  m_ver = hexDisp((unsigned char*)&mp_d2sData->m_ver, 4);
+  m_size= hexDisp((unsigned char*)&mp_d2sData->m_size, 4);
+  m_checkSum = hexDisp((unsigned char*)&mp_d2sData->m_checkSum, 4);
+  memset(&mp_d2sData->m_checkSum, 0, 4);
+  m_activeW = hexDisp((unsigned char*)&mp_d2sData->m_activeW, 4);
+  m_name= stringDisp((unsigned char*)mp_d2sData->m_name, 16);
+  m_status = hexDisp((unsigned char*)&mp_d2sData->m_status, 1);
+  m_progression = hexDisp((unsigned char*)&mp_d2sData->m_progression, 1);
+  m_class = hexDisp((unsigned char*)&mp_d2sData->m_class, 1);
+  m_level= hexDisp((unsigned char*)&mp_d2sData->m_level, 1);
+  m_difficulty = hexDisp((unsigned char*)&mp_d2sData->m_difficulty, 3);
+  m_wayPoint = hexDisp((unsigned char*)&mp_d2sData->m_wayPoint, 81);
+  m_stat = hexDisp((unsigned char*)&mp_d2sData->m_stat, mp_d2sData->m_size - sizeof(struct s_d2sFormat) + 4);
+  UpdateData(FALSE);
+  return 0;
+}
+
+void Cd2sDlg::OnBnClickedOk()
+{
+  // TODO: 在此添加控件通知处理程序代码
+  CStdioFile t_csf;
+  checkSum(mp_d2sData, m_d2sDataSize);
+  t_csf.Open(m_path, CFile::modeWrite | CFile::typeBinary);
+  t_csf.Write(mp_d2sData, ((struct s_d2sFormat*)mp_d2sData)->m_size);
+  t_csf.Close();
+
+  CDialogEx::OnOK();
+}
+
+void Cd2sDlg::OnEnChangeEdit7()
+{
+  // TODO:  如果该控件是 RICHEDIT 控件，它将不
+  // 发送此通知，除非重写 CDialogEx::OnInitDialog()
+  // 函数并调用 CRichEditCtrl().SetEventMask()，
+  // 同时将 ENM_CHANGE 标志“或”运算到掩码中。
+
+  // TODO:  在此添加控件通知处理程序代码
+  memset(mp_d2sData->m_name, 0, 16);
+  UpdateData(TRUE);
+}
+
+
+void Cd2sDlg::OnEnChangeEdit8()
+{
+  // TODO:  如果该控件是 RICHEDIT 控件，它将不
+  // 发送此通知，除非重写 CDialogEx::OnInitDialog()
+  // 函数并调用 CRichEditCtrl().SetEventMask()，
+  // 同时将 ENM_CHANGE 标志“或”运算到掩码中。
+
+  // TODO:  在此添加控件通知处理程序代码
+  UpdateData(TRUE);
+  mp_d2sData->m_status = (unsigned char)_tcstol(m_status, NULL, 16);
+}
+
+
+void Cd2sDlg::OnEnChangeEdit10()
+{
+  // TODO:  如果该控件是 RICHEDIT 控件，它将不
+  // 发送此通知，除非重写 CDialogEx::OnInitDialog()
+  // 函数并调用 CRichEditCtrl().SetEventMask()，
+  // 同时将 ENM_CHANGE 标志“或”运算到掩码中。
+
+  // TODO:  在此添加控件通知处理程序代码
+  UpdateData(TRUE);
+  mp_d2sData->m_class = (unsigned char)_tcstol(m_class, NULL, 16);
+}
+
+
+void Cd2sDlg::OnEnChangeEdit11()
+{
+  // TODO:  如果该控件是 RICHEDIT 控件，它将不
+  // 发送此通知，除非重写 CDialogEx::OnInitDialog()
+  // 函数并调用 CRichEditCtrl().SetEventMask()，
+  // 同时将 ENM_CHANGE 标志“或”运算到掩码中。
+
+  // TODO:  在此添加控件通知处理程序代码
+  UpdateData(TRUE);
+  mp_d2sData->m_level = (unsigned char)_tcstol(m_level, NULL, 16);
+}
+
+
+void Cd2sDlg::OnBnClickedCheck1()
+{
+  // TODO: 在此添加控件通知处理程序代码
+  UpdateData(TRUE);
+  if (m_wpEnable)
+  {
+    for (int t_i = 10; t_i <= 58; t_i += 24)
+    {
+
+      mp_d2sData->m_wayPoint[t_i] = 0xff;
+      mp_d2sData->m_wayPoint[t_i + 1] = 0xff;
+      mp_d2sData->m_wayPoint[t_i + 2] = 0xff;
+      mp_d2sData->m_wayPoint[t_i + 3] = 0xff;
+      mp_d2sData->m_wayPoint[t_i + 4] = 0x7f;
+    }
+  }
+  else
+  {
+    for (int t_i = 10; t_i <= 58; t_i += 24)
+    {
+
+      mp_d2sData->m_wayPoint[t_i] = 0x01;
+      mp_d2sData->m_wayPoint[t_i + 1] = 0x00;
+      mp_d2sData->m_wayPoint[t_i + 2] = 0x00;
+      mp_d2sData->m_wayPoint[t_i + 3] = 0x00;
+      mp_d2sData->m_wayPoint[t_i + 4] = 0x00;
+    }
+  }
+  m_wayPoint = hexDisp((unsigned char*)&mp_d2sData->m_wayPoint, 81);
+  UpdateData(FALSE);
+}
