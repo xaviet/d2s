@@ -17,7 +17,7 @@
 
 
 Cd2sDlg::Cd2sDlg(CWnd* pParent /*=NULL*/)
-	: CDialogEx(IDD_D2S_DIALOG, pParent)
+  : CDialogEx(IDD_D2S_DIALOG, pParent)
   , m_path(_T(""))
   , mp_d2sData(NULL)
   , m_d2sDataSize(0)
@@ -35,8 +35,13 @@ Cd2sDlg::Cd2sDlg(CWnd* pParent /*=NULL*/)
   , m_wayPoint(_T(""))
   , m_stat(_T(""))
   , m_wpEnable(FALSE)
+  , m_temp(_T(""))
+  , m_time(_T(""))
+  , m_forge(FALSE)
+  , m_byte(_T(""))
+  , m_result(_T(""))
 {
-	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+  m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
 
 void Cd2sDlg::DoDataExchange(CDataExchange* pDX)
@@ -62,11 +67,16 @@ void Cd2sDlg::DoDataExchange(CDataExchange* pDX)
   DDX_Text(pDX, IDC_EDIT13, m_wayPoint);
   DDX_Text(pDX, IDC_EDIT14, m_stat);
   DDX_Check(pDX, IDC_CHECK1, m_wpEnable);
+  DDX_Text(pDX, IDC_EDIT15, m_temp);
+  DDX_Text(pDX, IDC_EDIT16, m_time);
+  DDX_Check(pDX, IDC_CHECK2, m_forge);
+  DDX_Text(pDX, IDC_EDIT17, m_byte);
+  DDX_Text(pDX, IDC_EDIT18, m_result);
 }
 
 BEGIN_MESSAGE_MAP(Cd2sDlg, CDialogEx)
-	ON_WM_PAINT()
-	ON_WM_QUERYDRAGICON()
+  ON_WM_PAINT()
+  ON_WM_QUERYDRAGICON()
   ON_BN_CLICKED(IDC_BUTTON2, &Cd2sDlg::OnBnClickedButton2)
   ON_BN_CLICKED(IDOK, &Cd2sDlg::OnBnClickedOk)
   ON_EN_CHANGE(IDC_EDIT7, &Cd2sDlg::OnEnChangeEdit7)
@@ -74,6 +84,9 @@ BEGIN_MESSAGE_MAP(Cd2sDlg, CDialogEx)
   ON_EN_CHANGE(IDC_EDIT10, &Cd2sDlg::OnEnChangeEdit10)
   ON_EN_CHANGE(IDC_EDIT11, &Cd2sDlg::OnEnChangeEdit11)
   ON_BN_CLICKED(IDC_CHECK1, &Cd2sDlg::OnBnClickedCheck1)
+  ON_BN_CLICKED(IDC_CHECK2, &Cd2sDlg::OnBnClickedCheck2)
+  ON_BN_CLICKED(IDC_BUTTON1, &Cd2sDlg::OnBnClickedButton1)
+  ON_BN_CLICKED(IDC_BUTTON3, &Cd2sDlg::OnBnClickedButton3)
 END_MESSAGE_MAP()
 
 
@@ -81,11 +94,23 @@ END_MESSAGE_MAP()
 
 CString Cd2sDlg::hexDisp(unsigned char* vp_buffer, int v_length)
 {
-  CString t_cs=_T("");
+  CString t_cs = _T("");
   for (int t_i = 0; t_i < v_length; t_i++)
   {
+    if (t_i % 8 == 0)
+    {
+      t_cs.Format(_T("%s "), t_cs, _T(" "));
+    }
     t_cs.Format(_T("%s %02X"), t_cs, *vp_buffer++);
   }
+  t_cs.Trim();
+  return t_cs;
+}
+
+CString Cd2sDlg::decDisp(int v_i)
+{
+  CString t_cs = _T("");
+  t_cs.Format(_T("%d"), v_i);
   t_cs.Trim();
   return t_cs;
 }
@@ -110,20 +135,20 @@ CString Cd2sDlg::checkSum(struct s_d2sFormat* vp_buffer, int v_length)
 
 BOOL Cd2sDlg::OnInitDialog()
 {
-	CDialogEx::OnInitDialog();
+  CDialogEx::OnInitDialog();
 
-	// 设置此对话框的图标。  当应用程序主窗口不是对话框时，框架将自动
-	//  执行此操作
-	SetIcon(m_hIcon, TRUE);			// 设置大图标
-	SetIcon(m_hIcon, FALSE);		// 设置小图标
+  // 设置此对话框的图标。  当应用程序主窗口不是对话框时，框架将自动
+  //  执行此操作
+  SetIcon(m_hIcon, TRUE);			// 设置大图标
+  SetIcon(m_hIcon, FALSE);		// 设置小图标
 
-	// TODO: 在此添加额外的初始化代码
+  // TODO: 在此添加额外的初始化代码
 
-  m_path = _T("C:\\code\\Visual C++ 项目\\d2s\\d2s\\test.d2s");
+  m_path = _T("C:\\code\\Visual C++ 项目\\d2s\\d2s\\ToeA.d2s");
   UpdateData(FALSE);
   d2sParser(m_path);
 
-	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
+  return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
 // 如果向对话框添加最小化按钮，则需要下面的代码
@@ -132,34 +157,34 @@ BOOL Cd2sDlg::OnInitDialog()
 
 void Cd2sDlg::OnPaint()
 {
-	if (IsIconic())
-	{
-		CPaintDC dc(this); // 用于绘制的设备上下文
+  if (IsIconic())
+  {
+    CPaintDC dc(this); // 用于绘制的设备上下文
 
-		SendMessage(WM_ICONERASEBKGND, reinterpret_cast<WPARAM>(dc.GetSafeHdc()), 0);
+    SendMessage(WM_ICONERASEBKGND, reinterpret_cast<WPARAM>(dc.GetSafeHdc()), 0);
 
-		// 使图标在工作区矩形中居中
-		int cxIcon = GetSystemMetrics(SM_CXICON);
-		int cyIcon = GetSystemMetrics(SM_CYICON);
-		CRect rect;
-		GetClientRect(&rect);
-		int x = (rect.Width() - cxIcon + 1) / 2;
-		int y = (rect.Height() - cyIcon + 1) / 2;
+    // 使图标在工作区矩形中居中
+    int cxIcon = GetSystemMetrics(SM_CXICON);
+    int cyIcon = GetSystemMetrics(SM_CYICON);
+    CRect rect;
+    GetClientRect(&rect);
+    int x = (rect.Width() - cxIcon + 1) / 2;
+    int y = (rect.Height() - cyIcon + 1) / 2;
 
-		// 绘制图标
-		dc.DrawIcon(x, y, m_hIcon);
-	}
-	else
-	{
-		CDialogEx::OnPaint();
-	}
+    // 绘制图标
+    dc.DrawIcon(x, y, m_hIcon);
+  }
+  else
+  {
+    CDialogEx::OnPaint();
+  }
 }
 
 //当用户拖动最小化窗口时系统调用此函数取得光标
 //显示。
 HCURSOR Cd2sDlg::OnQueryDragIcon()
 {
-	return static_cast<HCURSOR>(m_hIcon);
+  return static_cast<HCURSOR>(m_hIcon);
 }
 
 void Cd2sDlg::OnBnClickedButton2()
@@ -168,8 +193,8 @@ void Cd2sDlg::OnBnClickedButton2()
   CString t_defaultDir = _T("../");   //默认打开的文件路径  
   CString t_filter = _T("文件 (*.d2s)|*.d2s||");   //文件过虑的类型  
   CFileDialog openFileDlg(TRUE, t_defaultDir, m_path, OFN_HIDEREADONLY | OFN_READONLY, t_filter, NULL);
-  INT_PTR result = openFileDlg.DoModal();
-  if (result == IDOK)
+  INT_PTR t_result = openFileDlg.DoModal();
+  if (t_result == IDOK)
   {
     m_path = openFileDlg.GetPathName();
     UpdateData(FALSE);
@@ -187,18 +212,21 @@ int Cd2sDlg::d2sParser(CString v_path)
   t_csf.Close();
   m_flag = hexDisp((unsigned char*)&mp_d2sData->m_flag, 4);
   m_ver = hexDisp((unsigned char*)&mp_d2sData->m_ver, 4);
-  m_size= hexDisp((unsigned char*)&mp_d2sData->m_size, 4);
+  m_size = hexDisp((unsigned char*)&mp_d2sData->m_size, 4);
   m_checkSum = hexDisp((unsigned char*)&mp_d2sData->m_checkSum, 4);
   memset(&mp_d2sData->m_checkSum, 0, 4);
   m_activeW = hexDisp((unsigned char*)&mp_d2sData->m_activeW, 4);
-  m_name= stringDisp((unsigned char*)mp_d2sData->m_name, 16);
+  m_name = stringDisp((unsigned char*)mp_d2sData->m_name, 16);
   m_status = hexDisp((unsigned char*)&mp_d2sData->m_status, 1);
   m_progression = hexDisp((unsigned char*)&mp_d2sData->m_progression, 1);
   m_class = hexDisp((unsigned char*)&mp_d2sData->m_class, 1);
-  m_level= hexDisp((unsigned char*)&mp_d2sData->m_level, 1);
+  m_level = decDisp((int)mp_d2sData->m_level);
   m_difficulty = hexDisp((unsigned char*)&mp_d2sData->m_difficulty, 3);
   m_wayPoint = hexDisp((unsigned char*)&mp_d2sData->m_wayPoint, 81);
   m_stat = hexDisp((unsigned char*)&mp_d2sData->m_stat, mp_d2sData->m_size - sizeof(struct s_d2sFormat) + 4);
+  m_time = decDisp((int)mp_d2sData->m_time);
+
+  m_temp = hexDisp((unsigned char*)&mp_d2sData->m_stat, 64);
   UpdateData(FALSE);
   return 0;
 }
@@ -211,7 +239,6 @@ void Cd2sDlg::OnBnClickedOk()
   t_csf.Open(m_path, CFile::modeWrite | CFile::typeBinary);
   t_csf.Write(mp_d2sData, ((struct s_d2sFormat*)mp_d2sData)->m_size);
   t_csf.Close();
-
   CDialogEx::OnOK();
 }
 
@@ -263,7 +290,7 @@ void Cd2sDlg::OnEnChangeEdit11()
 
   // TODO:  在此添加控件通知处理程序代码
   UpdateData(TRUE);
-  mp_d2sData->m_level = (unsigned char)_tcstol(m_level, NULL, 16);
+  mp_d2sData->m_level = (unsigned char)_tcstol(m_level, NULL, 10);
 }
 
 
@@ -297,4 +324,69 @@ void Cd2sDlg::OnBnClickedCheck1()
   }
   m_wayPoint = hexDisp((unsigned char*)&mp_d2sData->m_wayPoint, 81);
   UpdateData(FALSE);
+}
+
+
+void Cd2sDlg::OnBnClickedCheck2()
+{
+  // TODO: 在此添加控件通知处理程序代码
+  UpdateData(TRUE);
+  if (m_forge)
+  {
+    mp_d2sData->m_quest[16] = (mp_d2sData->m_quest[16] & 0xfc) + 0x2;
+  }
+}
+
+
+void Cd2sDlg::OnBnClickedButton1()
+{
+  // TODO: 在此添加控件通知处理程序代码
+  UpdateData(TRUE);
+  unsigned char t_ch = (unsigned char)_tcstol(m_byte, NULL, 16);
+  m_result = _T("");
+  unsigned char* tp_ch = (unsigned char*)mp_d2sData;
+  for (int t_i = 0; t_i < mp_d2sData->m_size; t_i++)
+  {
+    if (t_ch == *(tp_ch++))
+    {
+      m_result.Format(_T("%s %d"), m_result, t_i);
+    }
+  }
+  m_result.Trim();
+  UpdateData(FALSE);
+}
+
+
+void Cd2sDlg::OnBnClickedButton3()
+{
+  // TODO: 在此添加控件通知处理程序代码
+  m_result = _T("");
+  CString t_defaultDir = _T("../");   //默认打开的文件路径  
+  CString t_filter = _T("文件 (*.d2s)|*.d2s||");   //文件过虑的类型  
+  CString t_path = _T("");
+  CFileDialog openFileDlg(TRUE, t_defaultDir, t_path, OFN_HIDEREADONLY | OFN_READONLY, t_filter, NULL);
+  INT_PTR t_result = openFileDlg.DoModal();
+  unsigned char t_data[DEF_bufferLength] = { 0 };
+  memset(t_data, 0, DEF_bufferLength);
+  int t_len = 0;
+  unsigned char* tp_ch1 = (unsigned char*)mp_d2sData;
+  unsigned char* tp_ch2 = (unsigned char*)t_data;
+  if (t_result == IDOK)
+  {
+    t_path = openFileDlg.GetPathName();
+    CStdioFile t_csf;
+    t_csf.Open(t_path, CFile::modeRead | CFile::typeBinary);
+    t_len = t_csf.Read(t_data, DEF_bufferLength);
+    t_csf.Close();
+    int t_max = (t_len > m_d2sDataSize) ? t_len : m_d2sDataSize;
+    for (int t_i = 0; t_i < t_max; t_i++)
+    {
+      if (*(tp_ch1++) != *(tp_ch2++))
+      {
+        m_result.Format(_T("%s %d"), m_result, t_i);
+      }
+    }
+    m_result.Trim();
+    UpdateData(FALSE);
+  }
 }

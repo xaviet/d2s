@@ -67,6 +67,7 @@ protected:
   struct s_d2sFormat* mp_d2sData;
   int m_d2sDataSize;
   CString hexDisp(unsigned char*, int);
+  CString decDisp(int);
   CString stringDisp(unsigned char*, int);
   CString checkSum(struct s_d2sFormat*, int);
 
@@ -99,4 +100,12 @@ public:
   CString m_stat;
   afx_msg void OnBnClickedCheck1();
   BOOL m_wpEnable;
+  CString m_temp;
+  CString m_time;
+  BOOL m_forge;
+  afx_msg void OnBnClickedCheck2();
+  CString m_byte;
+  CString m_result;
+  afx_msg void OnBnClickedButton1();
+  afx_msg void OnBnClickedButton3();
 };
