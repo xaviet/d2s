@@ -5,9 +5,11 @@
 #pragma once
 #pragma pack(1)
 
+//#define DEF_defaultPath "C:\\code\\Visual C++ 项目\\d2s\\d2s\\ToeA.d2s"
+#define DEF_defaultPath "D:\\code\\Visual C++ Project\\d2s\\d2s\\ToeA.d2s"
 #define DEF_bufferLength 0x80000
 
-struct s_d2sFormat
+struct s_d2sGeneralFormat
 {
   int m_flag;
   int m_ver;
@@ -42,7 +44,13 @@ struct s_d2sFormat
   unsigned char m_quest[298];
   unsigned char m_wayPoint[81];
   unsigned char m_npc[51];
-  unsigned char* m_stat;
+};
+
+struct s_d2sStatFormat
+{
+  UINT16 m_statHead;
+  unsigned char* mp_stat;
+  int m_length;
 };
 
 // Cd2sDlg 对话框
@@ -64,12 +72,13 @@ public:
 // 实现
 protected:
 	HICON m_hIcon;
-  struct s_d2sFormat* mp_d2sData;
+  struct s_d2sGeneralFormat* mp_d2sGeneralData;
+  struct s_d2sStatFormat m_d2sStatData;
   int m_d2sDataSize;
   CString hexDisp(unsigned char*, int);
   CString decDisp(int);
   CString stringDisp(unsigned char*, int);
-  CString checkSum(struct s_d2sFormat*, int);
+  CString checkSum(struct s_d2sGeneralFormat*, int);
 
 	// 生成的消息映射函数
 	virtual BOOL OnInitDialog();
@@ -108,4 +117,7 @@ public:
   CString m_result;
   afx_msg void OnBnClickedButton1();
   afx_msg void OnBnClickedButton3();
+  CString m_stat00;
+  int getBits(unsigned char*, int, int);
+  void setBits(unsigned char*, int, int, unsigned int);
 };
