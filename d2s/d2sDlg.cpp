@@ -273,8 +273,8 @@ void Cd2sDlg::OnEnChangeEdit7()
   // 同时将 ENM_CHANGE 标志“或”运算到掩码中。
 
   // TODO:  在此添加控件通知处理程序代码
-  memset(mp_d2sGeneralData->m_name, 0, 16);
   UpdateData(TRUE);
+  memset(mp_d2sGeneralData->m_name, 0, 16);
 }
 
 
