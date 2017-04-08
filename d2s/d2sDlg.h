@@ -5,9 +5,11 @@
 #pragma once
 #pragma pack(1)
 
-//#define DEF_defaultPath "C:\\code\\Visual C++ 项目\\d2s\\d2s\\ToeA.d2s"
-#define DEF_defaultPath "D:\\code\\Visual C++ Project\\d2s\\d2s\\ToeA.d2s"
+#define DEF_defaultPath "C:\\code\\Visual C++ 项目\\d2s\\d2s\\ToeA.d2s"
+//#define DEF_defaultPath "D:\\code\\Visual C++ Project\\d2s\\d2s\\ToeA.d2s"
 #define DEF_bufferLength 0x80000
+#define DEF_statNumber 0x10
+#define DEF_statLength {10,10,10,10,10,8,21,21,21,21,21,21,7,32,25,25}
 
 struct s_d2sGeneralFormat
 {
@@ -48,8 +50,7 @@ struct s_d2sGeneralFormat
 
 struct s_d2sStatFormat
 {
-  UINT16 m_statHead;
-  unsigned char* mp_stat;
+  int m_start;
   int m_length;
 };
 
@@ -73,7 +74,7 @@ public:
 protected:
 	HICON m_hIcon;
   struct s_d2sGeneralFormat* mp_d2sGeneralData;
-  struct s_d2sStatFormat m_d2sStatData;
+  struct s_d2sStatFormat m_d2sStatData[DEF_statNumber];
   int m_d2sDataSize;
   CString hexDisp(unsigned char*, int);
   CString decDisp(int);
@@ -118,6 +119,24 @@ public:
   afx_msg void OnBnClickedButton1();
   afx_msg void OnBnClickedButton3();
   CString m_stat00;
-  int getBits(unsigned char*, int, int);
+  unsigned char getBit(unsigned char*, int);
+  unsigned int getBits(unsigned char*, int, int);
   void setBits(unsigned char*, int, int, unsigned int);
+  CString m_stat01;
+  CString m_stat02;
+  CString m_stat03;
+  CString m_stat04;
+  CString m_stat05;
+  CString m_stat06;
+  CString m_stat07;
+  CString m_stat08;
+  CString m_stat09;
+  CString m_stat10;
+  CString m_stat11;
+  CString m_stat12;
+  CString m_stat13;
+  CString m_stat14;
+  CString m_stat15;
+  afx_msg void OnEnChangeEdit24();
+  unsigned char* m_statBuffer;
 };

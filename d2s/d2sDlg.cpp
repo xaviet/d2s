@@ -41,6 +41,21 @@ Cd2sDlg::Cd2sDlg(CWnd* pParent /*=NULL*/)
   , m_byte(_T(""))
   , m_result(_T(""))
   , m_stat00(_T(""))
+  , m_stat01(_T(""))
+  , m_stat02(_T(""))
+  , m_stat03(_T(""))
+  , m_stat04(_T(""))
+  , m_stat05(_T(""))
+  , m_stat06(_T(""))
+  , m_stat07(_T(""))
+  , m_stat08(_T(""))
+  , m_stat09(_T(""))
+  , m_stat10(_T(""))
+  , m_stat11(_T(""))
+  , m_stat12(_T(""))
+  , m_stat13(_T(""))
+  , m_stat14(_T(""))
+  , m_stat15(_T(""))
 {
   m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -74,6 +89,21 @@ void Cd2sDlg::DoDataExchange(CDataExchange* pDX)
   DDX_Text(pDX, IDC_EDIT17, m_byte);
   DDX_Text(pDX, IDC_EDIT18, m_result);
   DDX_Text(pDX, IDC_EDIT19, m_stat00);
+  DDX_Text(pDX, IDC_EDIT20, m_stat01);
+  DDX_Text(pDX, IDC_EDIT21, m_stat02);
+  DDX_Text(pDX, IDC_EDIT22, m_stat03);
+  DDX_Text(pDX, IDC_EDIT23, m_stat04);
+  DDX_Text(pDX, IDC_EDIT24, m_stat05);
+  DDX_Text(pDX, IDC_EDIT25, m_stat06);
+  DDX_Text(pDX, IDC_EDIT26, m_stat07);
+  DDX_Text(pDX, IDC_EDIT27, m_stat08);
+  DDX_Text(pDX, IDC_EDIT28, m_stat09);
+  DDX_Text(pDX, IDC_EDIT29, m_stat10);
+  DDX_Text(pDX, IDC_EDIT30, m_stat11);
+  DDX_Text(pDX, IDC_EDIT31, m_stat12);
+  DDX_Text(pDX, IDC_EDIT32, m_stat13);
+  DDX_Text(pDX, IDC_EDIT33, m_stat14);
+  DDX_Text(pDX, IDC_EDIT34, m_stat15);
 }
 
 BEGIN_MESSAGE_MAP(Cd2sDlg, CDialogEx)
@@ -89,6 +119,7 @@ BEGIN_MESSAGE_MAP(Cd2sDlg, CDialogEx)
   ON_BN_CLICKED(IDC_CHECK2, &Cd2sDlg::OnBnClickedCheck2)
   ON_BN_CLICKED(IDC_BUTTON1, &Cd2sDlg::OnBnClickedButton1)
   ON_BN_CLICKED(IDC_BUTTON3, &Cd2sDlg::OnBnClickedButton3)
+  ON_EN_CHANGE(IDC_EDIT24, &Cd2sDlg::OnEnChangeEdit24)
 END_MESSAGE_MAP()
 
 
@@ -123,16 +154,20 @@ CString Cd2sDlg::stringDisp(unsigned char* vp_buffer, int v_length)
   return t_cs;
 }
 
-int Cd2sDlg::getBits(unsigned char* vp_buffer, int v_start, int v_length)
+unsigned char Cd2sDlg::getBit(unsigned char* vp_buffer, int v_pos)
+{
+  unsigned char t_rt = *(vp_buffer + (v_pos / 8));
+  t_rt = ((t_rt << (7 - v_pos % 8)) & 0x80) >> 7;
+  return(t_rt);
+}
+
+unsigned int Cd2sDlg::getBits(unsigned char* vp_buffer, int v_start, int v_length)
 {
   unsigned int t_rt = 0;
-  unsigned char* t_ch = vp_buffer + v_start / 8;
-  t_rt = *(t_ch++) >> (v_start % 8);
-  for (int t_i = 0; t_i < ((v_length - (8 - v_start % 8)) / 8); t_i++)
+  for (int t_i = 0; t_i < v_length; t_i++)
   {
-    t_rt += *(t_ch++);
+    t_rt = t_rt + (getBit(vp_buffer, v_start + t_i) << t_i );
   }
-  t_rt += *(t_ch++) >> (((v_length - (8 - v_start % 8)) % 8));
   return(t_rt);
 }
 
@@ -245,8 +280,81 @@ int Cd2sDlg::d2sParser(CString v_path)
   m_wayPoint = hexDisp((unsigned char*)&mp_d2sGeneralData->m_wayPoint, 81);
   m_time = decDisp((int)mp_d2sGeneralData->m_time);
   m_stat = hexDisp((unsigned char*)((int)mp_d2sGeneralData + sizeof(struct s_d2sGeneralFormat)), mp_d2sGeneralData->m_size - sizeof(struct s_d2sGeneralFormat) + 4);
-  m_d2sStatData.m_statHead = *(UINT16*)((int)mp_d2sGeneralData + sizeof(struct s_d2sGeneralFormat));
-  m_d2sStatData.mp_stat = (unsigned char*)((int)mp_d2sGeneralData + sizeof(struct s_d2sGeneralFormat) + sizeof(m_d2sStatData.m_statHead));
+  int t_statLength[DEF_statNumber] = DEF_statLength;
+  for (int t_i = 0; t_i < DEF_statNumber; t_i++)
+  {
+    m_d2sStatData[t_i].m_length = t_statLength[t_i];
+  }
+  int t_statBitPoint = 0;
+  unsigned int t_i = 0;
+  m_statBuffer = (unsigned char*)((int)mp_d2sGeneralData + sizeof(struct s_d2sGeneralFormat) + 2);
+  while (1)
+  {
+    t_i = getBits(m_statBuffer, t_statBitPoint, 9);
+    t_statBitPoint += 9;
+    if (t_i == 0x1ff)
+    {
+      break;
+    }
+    else
+    {
+      switch (t_i)
+      {
+      case(0):
+        m_stat00 = decDisp((int)getBits(m_statBuffer, t_statBitPoint, m_d2sStatData[t_i].m_length));
+        break;
+      case(1):
+        m_stat01 = decDisp((int)getBits(m_statBuffer, t_statBitPoint, m_d2sStatData[t_i].m_length));
+        break;
+      case(2):
+        m_stat02 = decDisp((int)getBits(m_statBuffer, t_statBitPoint, m_d2sStatData[t_i].m_length));
+        break;
+      case(3):
+        m_stat03 = decDisp((int)getBits(m_statBuffer, t_statBitPoint, m_d2sStatData[t_i].m_length));
+        break;
+      case(4):
+        m_stat04 = decDisp((int)getBits(m_statBuffer, t_statBitPoint, m_d2sStatData[t_i].m_length));
+        break;
+      case(5):
+        m_stat05 = decDisp((int)getBits(m_statBuffer, t_statBitPoint, m_d2sStatData[t_i].m_length));
+        break;
+      case(6):
+        m_stat06 = decDisp((int)getBits(m_statBuffer, t_statBitPoint, m_d2sStatData[t_i].m_length));
+        break;
+      case(7):
+        m_stat07 = decDisp((int)getBits(m_statBuffer, t_statBitPoint, m_d2sStatData[t_i].m_length));
+        break;
+      case(8):
+        m_stat08 = decDisp((int)getBits(m_statBuffer, t_statBitPoint, m_d2sStatData[t_i].m_length));
+        break;
+      case(9):
+        m_stat09 = decDisp((int)getBits(m_statBuffer, t_statBitPoint, m_d2sStatData[t_i].m_length));
+        break;
+      case(10):
+        m_stat10 = decDisp((int)getBits(m_statBuffer, t_statBitPoint, m_d2sStatData[t_i].m_length));
+        break;
+      case(11):
+        m_stat11 = decDisp((int)getBits(m_statBuffer, t_statBitPoint, m_d2sStatData[t_i].m_length));
+        break;
+      case(12):
+        m_stat12 = decDisp((int)getBits(m_statBuffer, t_statBitPoint, m_d2sStatData[t_i].m_length));
+        break;
+      case(13):
+        m_stat13 = decDisp((int)getBits(m_statBuffer, t_statBitPoint, m_d2sStatData[t_i].m_length));
+        break;
+      case(14):
+        m_stat14 = decDisp((int)getBits(m_statBuffer, t_statBitPoint, m_d2sStatData[t_i].m_length));
+        break;
+      case(15):
+        m_stat15 = decDisp((int)getBits(m_statBuffer, t_statBitPoint, m_d2sStatData[t_i].m_length));
+        break;
+      default:
+        break;
+      }
+      m_d2sStatData[t_i].m_start = t_statBitPoint;
+      t_statBitPoint += m_d2sStatData[t_i].m_length;
+    }
+  }
 
   m_temp = hexDisp((unsigned char*)((int)mp_d2sGeneralData + sizeof(struct s_d2sGeneralFormat)), 56);
   UpdateData(FALSE);
@@ -412,4 +520,18 @@ void Cd2sDlg::OnBnClickedButton3()
     m_result.Trim();
     UpdateData(FALSE);
   }
+}
+
+
+void Cd2sDlg::OnEnChangeEdit24()
+{
+  // TODO:  如果该控件是 RICHEDIT 控件，它将不
+  // 发送此通知，除非重写 CDialogEx::OnInitDialog()
+  // 函数并调用 CRichEditCtrl().SetEventMask()，
+  // 同时将 ENM_CHANGE 标志“或”运算到掩码中。
+
+  // TODO:  在此添加控件通知处理程序代码
+  UpdateData(TRUE);
+  int t_stat05 = (unsigned char)_tcstol(m_stat05, NULL, 10);
+  setBits(m_statBuffer, m_d2sStatData[5].m_start, m_d2sStatData[5].m_length, t_stat05);
 }
