@@ -5,7 +5,7 @@
 #pragma once
 #pragma pack(1)
 
-#define DEF_defaultPath "C:\\code\\Visual C++ 项目\\d2s\\d2s\\ToeA.d2s"
+#define DEF_defaultPath "C:\\code\\Visual C++ 项目\\d2s\\d2s\\ToeN.d2s"
 //#define DEF_defaultPath "D:\\code\\Visual C++ Project\\d2s\\d2s\\ToeA.d2s"
 #define DEF_bufferLength 0x80000
 #define DEF_statNumber 0x10
@@ -121,6 +121,7 @@ public:
   CString m_stat00;
   unsigned char getBit(unsigned char*, int);
   unsigned int getBits(unsigned char*, int, int);
+  void setBit(unsigned char*, int, int);
   void setBits(unsigned char*, int, int, unsigned int);
   CString m_stat01;
   CString m_stat02;
@@ -137,6 +138,12 @@ public:
   CString m_stat13;
   CString m_stat14;
   CString m_stat15;
+  void saveD2sData();
   afx_msg void OnEnChangeEdit24();
   unsigned char* m_statBuffer;
+  unsigned char* m_itemBuffer;
+  afx_msg void OnEnChangeEdit23();
+  afx_msg void OnEnChangeEdit33();
+  afx_msg void OnEnChangeEdit34();
+  CString m_item;
 };

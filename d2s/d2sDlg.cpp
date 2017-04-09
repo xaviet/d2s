@@ -56,6 +56,7 @@ Cd2sDlg::Cd2sDlg(CWnd* pParent /*=NULL*/)
   , m_stat13(_T(""))
   , m_stat14(_T(""))
   , m_stat15(_T(""))
+  , m_item(_T(""))
 {
   m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -104,6 +105,7 @@ void Cd2sDlg::DoDataExchange(CDataExchange* pDX)
   DDX_Text(pDX, IDC_EDIT32, m_stat13);
   DDX_Text(pDX, IDC_EDIT33, m_stat14);
   DDX_Text(pDX, IDC_EDIT34, m_stat15);
+  DDX_Text(pDX, IDC_EDIT35, m_item);
 }
 
 BEGIN_MESSAGE_MAP(Cd2sDlg, CDialogEx)
@@ -120,6 +122,9 @@ BEGIN_MESSAGE_MAP(Cd2sDlg, CDialogEx)
   ON_BN_CLICKED(IDC_BUTTON1, &Cd2sDlg::OnBnClickedButton1)
   ON_BN_CLICKED(IDC_BUTTON3, &Cd2sDlg::OnBnClickedButton3)
   ON_EN_CHANGE(IDC_EDIT24, &Cd2sDlg::OnEnChangeEdit24)
+  ON_EN_CHANGE(IDC_EDIT23, &Cd2sDlg::OnEnChangeEdit23)
+  ON_EN_CHANGE(IDC_EDIT33, &Cd2sDlg::OnEnChangeEdit33)
+  ON_EN_CHANGE(IDC_EDIT34, &Cd2sDlg::OnEnChangeEdit34)
 END_MESSAGE_MAP()
 
 
@@ -171,9 +176,27 @@ unsigned int Cd2sDlg::getBits(unsigned char* vp_buffer, int v_start, int v_lengt
   return(t_rt);
 }
 
+void Cd2sDlg::setBit(unsigned char* vp_buffer, int v_pos, int v_value)
+{
+  unsigned char* t_ch = vp_buffer + (v_pos / 8);
+  if (v_value)
+  {
+    *t_ch = *t_ch | ((unsigned char)1 << (v_pos % 8));
+  }
+  else
+  {
+    *t_ch = *t_ch & (~((unsigned char)1 << (v_pos % 8)));
+  }
+}
+
 void Cd2sDlg::setBits(unsigned char* vp_buffer, int v_start, int v_length, unsigned int v_value)
 {
-
+  int t_bit = 0;
+  for (int t_i = 0; t_i < v_length; t_i++)
+  {
+    t_bit = (v_value << (31 - t_i)) >> 31;
+    setBit(vp_buffer, v_start + t_i, t_bit);
+  }
 }
 
 CString Cd2sDlg::checkSum(struct s_d2sGeneralFormat* vp_buffer, int v_length)
@@ -355,21 +378,28 @@ int Cd2sDlg::d2sParser(CString v_path)
       t_statBitPoint += m_d2sStatData[t_i].m_length;
     }
   }
+  m_itemBuffer = m_statBuffer + (t_statBitPoint / 8) + ((t_statBitPoint % 8) ? 1 : 0);
+  m_item = hexDisp((unsigned char*)m_itemBuffer, mp_d2sGeneralData->m_size - (m_itemBuffer - m_statBuffer));
 
-  m_temp = hexDisp((unsigned char*)((int)mp_d2sGeneralData + sizeof(struct s_d2sGeneralFormat)), 56);
+  m_temp = hexDisp((unsigned char*)(m_itemBuffer), 56);
   UpdateData(FALSE);
   return 0;
+}
+
+void Cd2sDlg::saveD2sData()
+{
+  CStdioFile t_csf;
+
+  checkSum(mp_d2sGeneralData, m_d2sDataSize);
+  t_csf.Open(m_path, CFile::modeWrite | CFile::typeBinary);
+  t_csf.Write(mp_d2sGeneralData, ((struct s_d2sGeneralFormat*)mp_d2sGeneralData)->m_size);
+  t_csf.Close();
 }
 
 void Cd2sDlg::OnBnClickedOk()
 {
   // TODO: 在此添加控件通知处理程序代码
-  CStdioFile t_csf;
- 
-  checkSum(mp_d2sGeneralData, m_d2sDataSize);
-  t_csf.Open(m_path, CFile::modeWrite | CFile::typeBinary);
-  t_csf.Write(mp_d2sGeneralData, ((struct s_d2sGeneralFormat*)mp_d2sGeneralData)->m_size);
-  t_csf.Close();
+  saveD2sData();
   CDialogEx::OnOK();
 }
 
@@ -473,6 +503,7 @@ void Cd2sDlg::OnBnClickedButton1()
 {
   // TODO: 在此添加控件通知处理程序代码
   UpdateData(TRUE);
+  saveD2sData();
   unsigned char t_ch = (unsigned char)_tcstol(m_byte, NULL, 16);
   m_result = _T("");
   unsigned char* tp_ch = (unsigned char*)mp_d2sGeneralData;
@@ -532,6 +563,48 @@ void Cd2sDlg::OnEnChangeEdit24()
 
   // TODO:  在此添加控件通知处理程序代码
   UpdateData(TRUE);
-  int t_stat05 = (unsigned char)_tcstol(m_stat05, NULL, 10);
+  unsigned int t_stat05 = (unsigned int)_tcstol(m_stat05, NULL, 10);
   setBits(m_statBuffer, m_d2sStatData[5].m_start, m_d2sStatData[5].m_length, t_stat05);
+}
+
+
+void Cd2sDlg::OnEnChangeEdit23()
+{
+  // TODO:  如果该控件是 RICHEDIT 控件，它将不
+  // 发送此通知，除非重写 CDialogEx::OnInitDialog()
+  // 函数并调用 CRichEditCtrl().SetEventMask()，
+  // 同时将 ENM_CHANGE 标志“或”运算到掩码中。
+
+  // TODO:  在此添加控件通知处理程序代码
+  UpdateData(TRUE);
+  unsigned int t_stat04 = (unsigned int)_tcstol(m_stat04, NULL, 10);
+  setBits(m_statBuffer, m_d2sStatData[4].m_start, m_d2sStatData[4].m_length, t_stat04);
+}
+
+
+void Cd2sDlg::OnEnChangeEdit33()
+{
+  // TODO:  如果该控件是 RICHEDIT 控件，它将不
+  // 发送此通知，除非重写 CDialogEx::OnInitDialog()
+  // 函数并调用 CRichEditCtrl().SetEventMask()，
+  // 同时将 ENM_CHANGE 标志“或”运算到掩码中。
+
+  // TODO:  在此添加控件通知处理程序代码
+  UpdateData(TRUE);
+  unsigned int t_stat14 = (unsigned int)_tcstol(m_stat14, NULL, 10);
+  setBits(m_statBuffer, m_d2sStatData[14].m_start, m_d2sStatData[14].m_length, t_stat14);
+}
+
+
+void Cd2sDlg::OnEnChangeEdit34()
+{
+  // TODO:  如果该控件是 RICHEDIT 控件，它将不
+  // 发送此通知，除非重写 CDialogEx::OnInitDialog()
+  // 函数并调用 CRichEditCtrl().SetEventMask()，
+  // 同时将 ENM_CHANGE 标志“或”运算到掩码中。
+
+  // TODO:  在此添加控件通知处理程序代码
+  UpdateData(TRUE);
+  unsigned int t_stat15 = (unsigned int)_tcstol(m_stat15, NULL, 10);
+  setBits(m_statBuffer, m_d2sStatData[15].m_start, m_d2sStatData[15].m_length, t_stat15);
 }
