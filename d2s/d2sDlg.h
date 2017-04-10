@@ -5,8 +5,8 @@
 #pragma once
 #pragma pack(1)
 
-#define DEF_defaultPath "C:\\code\\Visual C++ 项目\\d2s\\d2s\\ToeN.d2s"
-//#define DEF_defaultPath "D:\\code\\Visual C++ Project\\d2s\\d2s\\ToeA.d2s"
+//#define DEF_defaultPath "C:\\code\\Visual C++ 项目\\d2s\\d2s\\ToeN.d2s"
+#define DEF_defaultPath "D:\\code\\Visual C++ Project\\d2s\\d2s\\ToeA.d2s"
 #define DEF_bufferLength 0x80000
 #define DEF_statNumber 0x10
 #define DEF_statLength {10,10,10,10,10,8,21,21,21,21,21,21,7,32,25,25}
@@ -146,4 +146,13 @@ public:
   afx_msg void OnEnChangeEdit33();
   afx_msg void OnEnChangeEdit34();
   CString m_item;
+  CString m_itemFile;
+  afx_msg void OnBnClickedButton4();
+  CString m_itemFilePath;
+  unsigned char m_itemFileData[DEF_bufferLength];
+  int m_itemFileLength;
+
+  afx_msg void OnBnClickedButton5();
+  BOOL m_mfFlag;
+  afx_msg void OnBnClickedCheck3();
 };

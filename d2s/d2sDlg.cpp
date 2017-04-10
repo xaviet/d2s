@@ -57,6 +57,8 @@ Cd2sDlg::Cd2sDlg(CWnd* pParent /*=NULL*/)
   , m_stat14(_T(""))
   , m_stat15(_T(""))
   , m_item(_T(""))
+  , m_itemFile(_T(""))
+  , m_mfFlag(FALSE)
 {
   m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -106,6 +108,8 @@ void Cd2sDlg::DoDataExchange(CDataExchange* pDX)
   DDX_Text(pDX, IDC_EDIT33, m_stat14);
   DDX_Text(pDX, IDC_EDIT34, m_stat15);
   DDX_Text(pDX, IDC_EDIT35, m_item);
+  DDX_Text(pDX, IDC_EDIT36, m_itemFile);
+  DDX_Check(pDX, IDC_CHECK3, m_mfFlag);
 }
 
 BEGIN_MESSAGE_MAP(Cd2sDlg, CDialogEx)
@@ -125,6 +129,9 @@ BEGIN_MESSAGE_MAP(Cd2sDlg, CDialogEx)
   ON_EN_CHANGE(IDC_EDIT23, &Cd2sDlg::OnEnChangeEdit23)
   ON_EN_CHANGE(IDC_EDIT33, &Cd2sDlg::OnEnChangeEdit33)
   ON_EN_CHANGE(IDC_EDIT34, &Cd2sDlg::OnEnChangeEdit34)
+  ON_BN_CLICKED(IDC_BUTTON4, &Cd2sDlg::OnBnClickedButton4)
+  ON_BN_CLICKED(IDC_BUTTON5, &Cd2sDlg::OnBnClickedButton5)
+  ON_BN_CLICKED(IDC_CHECK3, &Cd2sDlg::OnBnClickedCheck3)
 END_MESSAGE_MAP()
 
 
@@ -290,7 +297,7 @@ int Cd2sDlg::d2sParser(CString v_path)
   t_csf.Close();
   m_flag = hexDisp((unsigned char*)&mp_d2sGeneralData->m_flag, 4);
   m_ver = hexDisp((unsigned char*)&mp_d2sGeneralData->m_ver, 4);
-  m_size = hexDisp((unsigned char*)&mp_d2sGeneralData->m_size, 4);
+  m_size = decDisp((int)mp_d2sGeneralData->m_size);
   m_checkSum = hexDisp((unsigned char*)&mp_d2sGeneralData->m_checkSum, 4);
   memset(&mp_d2sGeneralData->m_checkSum, 0, 4);
   m_activeW = hexDisp((unsigned char*)&mp_d2sGeneralData->m_activeW, 4);
@@ -607,4 +614,94 @@ void Cd2sDlg::OnEnChangeEdit34()
   UpdateData(TRUE);
   unsigned int t_stat15 = (unsigned int)_tcstol(m_stat15, NULL, 10);
   setBits(m_statBuffer, m_d2sStatData[15].m_start, m_d2sStatData[15].m_length, t_stat15);
+}
+
+
+void Cd2sDlg::OnBnClickedButton4()
+{
+  // TODO: 在此添加控件通知处理程序代码
+  CString t_defaultDir = _T("../");   //默认打开的文件路径  
+  CString t_filter = _T("文件 (*.d2i)|*.d2i||");   //文件过虑的类型  
+  CFileDialog openFileDlg(TRUE, t_defaultDir, m_path, OFN_HIDEREADONLY | OFN_READONLY, t_filter, NULL);
+  INT_PTR t_result = openFileDlg.DoModal();
+  if (t_result == IDOK)
+  {
+    m_itemFilePath = openFileDlg.GetPathName();
+    UpdateData(FALSE);
+    CStdioFile t_csf;
+    t_csf.Open(m_itemFilePath, CFile::modeRead | CFile::typeBinary);
+    memset(m_itemFileData, 0, DEF_bufferLength);
+    m_itemFileLength = t_csf.Read(m_itemFileData, DEF_bufferLength);
+    t_csf.Close();
+    m_itemFile = hexDisp(m_itemFileData, m_itemFileLength);
+    UpdateData(FALSE);
+  }
+
+}
+
+
+void Cd2sDlg::OnBnClickedButton5()
+{
+  // TODO: 在此添加控件通知处理程序代码
+  if (m_itemFilePath.GetLength())
+  {
+    CStdioFile t_csf;
+    t_csf.Open(m_itemFilePath, CFile::modeWrite | CFile::typeBinary);
+    t_csf.Write(m_itemFileData, m_itemFileLength);
+    t_csf.Close();
+  }
+}
+
+
+void Cd2sDlg::OnBnClickedCheck3()
+{
+  // TODO: 在此添加控件通知处理程序代码
+  UpdateData(TRUE);
+  unsigned char* t_ch = NULL;
+  int t_endPos = 0;
+  if (m_mfFlag)
+  {
+    t_ch =  m_itemFileData;
+    for (int t_i = m_itemFileLength * 8 - 1; t_i >= 0; t_i--)
+    {
+      if (getBit(t_ch, t_i))
+      {
+        t_endPos = t_i - 8;
+        setBit(t_ch, t_endPos++, 0);
+        setBit(t_ch, t_endPos++, 0);
+        setBit(t_ch, t_endPos++, 0);
+        setBit(t_ch, t_endPos++, 0);
+        setBit(t_ch, t_endPos++, 1);
+        setBit(t_ch, t_endPos++, 0);
+        setBit(t_ch, t_endPos++, 1);
+        setBit(t_ch, t_endPos++, 0);
+        setBit(t_ch, t_endPos++, 0);
+        setBit(t_ch, t_endPos++, 1);
+        setBit(t_ch, t_endPos++, 1);
+        setBit(t_ch, t_endPos++, 1);
+        setBit(t_ch, t_endPos++, 1);
+        setBit(t_ch, t_endPos++, 1);
+        setBit(t_ch, t_endPos++, 1);
+        setBit(t_ch, t_endPos++, 1);
+        setBit(t_ch, t_endPos++, 1);
+        setBit(t_ch, t_endPos++, 1);
+        setBit(t_ch, t_endPos++, 1);
+        setBit(t_ch, t_endPos++, 1);
+        setBit(t_ch, t_endPos++, 1);
+        setBit(t_ch, t_endPos++, 1);
+        setBit(t_ch, t_endPos++, 1);
+        setBit(t_ch, t_endPos++, 1);
+        setBit(t_ch, t_endPos++, 1);
+        setBit(t_ch, t_endPos++, 1);
+        m_itemFileLength = t_endPos / 8 + ((t_endPos % 8) ? 1 : 0);
+        break;
+      }
+    }
+  }
+  else
+  {
+
+  }
+  m_itemFile = hexDisp(m_itemFileData, m_itemFileLength);
+  UpdateData(FALSE);
 }
