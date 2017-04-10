@@ -662,7 +662,7 @@ void Cd2sDlg::OnBnClickedCheck3()
   if (m_mfFlag && m_itemFilePath.GetLength())
   {
     t_ch =  m_itemFileData;
-    for (int t_redo=0; t_redo < 16; t_redo++)
+    for (int t_redo=0; t_redo < 1; t_redo++)
     {
       for (int t_i = m_itemFileLength * 8 - 1; t_i >= 0; t_i--)
       {
